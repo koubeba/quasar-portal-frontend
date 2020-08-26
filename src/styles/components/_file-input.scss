@@ -1,0 +1,49 @@
+.files {
+  input {
+      outline: 2px dashed #92b0b3;
+      outline-offset: -10px;
+      -webkit-transition: outline-offset .15s ease-in-out, background-color .15s linear;
+      transition: outline-offset .15s ease-in-out, background-color .15s linear;
+      padding: 120px 5% 85px 5%;
+      margin: 0;
+      width: 100% !important;
+  &:focus {
+       outline: 2px dashed #92b0b3;
+       outline-offset: -10px;
+       -webkit-transition: outline-offset .15s ease-in-out, background-color .15s linear;
+       transition: outline-offset .15s ease-in-out, background-color .15s linear;
+       border: 1px solid #92b0b3;
+   }
+}
+position: relative;
+&:after {
+     pointer-events: none;
+     position: absolute;
+     top: 70px;
+     left: 0;
+     width: 50px;
+     right: 0;
+     height: 56px;
+     content: "";
+     background-image: url(https://image.flaticon.com/icons/png/128/109/109612.png);
+     display: block;
+     margin: 0 auto;
+     background-size: 100%;
+     background-repeat: no-repeat;
+ }
+}
+.color {
+input {
+    background-color: #f1f1f1;
+}
+}
+
+.vertical-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-container {
+  width: 75%;
+}

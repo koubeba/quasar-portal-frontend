@@ -4,11 +4,14 @@
   "private": false,
   "homepage": "https://reduction-admin.github.io/react-reduction",
   "dependencies": {
+    "axios": "^0.20.0",
     "bootstrap": "4.3.1",
     "chart.js": "2.7.2",
     "classnames": "^2.2.6",
     "d3-geo": "^1.11.3",
     "faker": "^4.1.0",
+    "long": "^4.0.0",
+    "papaparse": "^5.3.0",
     "prop-types": "^15.7.2",
     "react": "^16.8.4",
     "react-chartjs-2": "^2.7.4",
@@ -50,5 +53,10 @@
     "not dead",
     "not ie <= 11",
     "not op_mini all"
-  ]
+  ],
+  "bit": {
+    "env": {},
+    "componentsDefaultDirectory": "components/{name}",
+    "packageManager": "npm"
+  }
 }
