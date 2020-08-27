@@ -7,7 +7,9 @@ const addFile = (files, filesToAdd) => {
 
 const FilesContext = React.createContext({
   files: [],
-  addFile: () => {}
+  lastOffset: 0,
+  addFile: () => {},
+  updateOffset: () => {}
 });
 
 export { addFile, FilesContext };

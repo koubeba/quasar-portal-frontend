@@ -14,7 +14,6 @@ const timestampToStr = (timestamp) => {
 };
 
 const renderRow = (row, index) => {
-  console.log(row);
   return (
     <tr key={index}>
       <td>{row.filename}</td>
@@ -37,22 +36,56 @@ class SentDataHistoryPage extends Component {
   componentDidMount() {
     const filesContext = this.context;
     this.fetchSentFiles(filesContext);
+
+    this.tickID = setInterval(
+      (() => this.tick()),
+      5000
+    )
   };
 
-  fetchSentFiles = (filesContext) => {
-    console.log('Fetching');
+  componentWillUnmount() {
+    clearInterval(this.tickID);
+  }
+
+  handleFetchingError = (err) => {
+    this.setState({
+      fetching_error: err,
+    });
+  }
+
+  tick() {
+    const handleError = this.handleFetchingError;
+    const fetchNew = this.fetchSentFiles;
+    const filesContext = this.context;
+    (async() => {
+      try {
+        const result = await axios.get('http://localhost:5000/get_sent_files_offset');
+        handleError(undefined);
+
+        let newOffset = result.data.data.offset;
+        console.log(filesContext.lastOffset)
+        console.log(newOffset)
+        if (newOffset > filesContext.lastOffset) fetchNew(newOffset, filesContext);
+      } catch (err) {
+        handleError(err);
+      }
+    })();
+  }
+
+  fetchSentFiles = (newOffset, filesContext) => {
+    const handleError = this.handleFetchingError;
     (async () => {
       try {
         const result = await axios.get('http://localhost:5000/get_sent_files');
+        filesContext.updateOffset(newOffset);
         filesContext.addFile(Object.values(result.data.data.messages));
       } catch (err) {
-        console.error(err);
-        this.setState({
-          fetching_error: err,
-        });
+        handleError(err);
       }
     })();
   };
+
+
 
   render() {
     let filesContext = this.context;
@@ -83,7 +116,7 @@ class SentDataHistoryPage extends Component {
                         <tbody>
                         {
                           filesContext.files.map((row, index) => {
-                            return renderRow(row[0], index);
+                            return renderRow(JSON.parse(row[0]), index);
                           })
                         }
                         </tbody>

@@ -24,11 +24,19 @@ class App extends React.Component {
       this.setState(state => ({
         files: addFile(state.files, file)
       }));
-    }
+    };
+
+    this.updateOffset = (newOffset) => {
+      this.setState({
+        lastOffset: newOffset
+      })
+    };
 
     this.state = {
       files: [],
-      addFile: this.addFile
+      lastOffset: 0,
+      addFile: this.addFile,
+      updateOffset: this.updateOffset
     }
   }
 
