@@ -1,100 +1,114 @@
 import Page from 'components/Page';
-import React from 'react';
-import { Card, CardBody, CardHeader, Col, Row, Table } from 'reactstrap';
+import React, { Component } from 'react';
+import { Card, CardBody, CardHeader, Col, Row, Table, UncontrolledAlert } from 'reactstrap';
+import { FilesContext } from '../utils/FilesArray';
+
+require('../styles/sent-data-history-page.css');
+
+const axios = require('axios');
 
 const tableTypes = ['', 'bordered', 'striped', 'hover'];
 
-const SentDataHistoryPage = () => {
-  return (
-    <Page
-      title="Sent Data History"
-      breadcrumbs={[{ name: 'sent data history', active: true }]}
-      className="SentDataPage"
-    >
-      <Row>
-        <Col>
-          <Card className="mb-3">
-            <CardHeader>Sent data</CardHeader>
-            <CardBody>
-              <Table>
-                <thead>
-                  <tr>
-                    <th scope="col">Type</th>
-                    <th scope="col">Column heading</th>
-                    <th scope="col">Column heading</th>
-                    <th scope="col">Column heading</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="table-active">
-                    <th scope="row">Active</th>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                  </tr>
-                  <tr>
-                    <th scope="row">Default</th>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                  </tr>
+const timestampToStr = (timestamp) => {
+  return new Date(timestamp * 1000);
+};
 
-                  <tr className="table-primary">
-                    <th scope="row">Primary</th>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                  </tr>
-                  <tr className="table-secondary">
-                    <th scope="row">Secondary</th>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                  </tr>
-                  <tr className="table-success">
-                    <th scope="row">Success</th>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                  </tr>
-                  <tr className="table-danger">
-                    <th scope="row">Danger</th>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                  </tr>
-                  <tr className="table-warning">
-                    <th scope="row">Warning</th>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                  </tr>
-                  <tr className="table-info">
-                    <th scope="row">Info</th>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                  </tr>
-                  <tr className="table-light">
-                    <th scope="row">Light</th>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                  </tr>
-                  <tr className="table-dark">
-                    <th scope="row">Dark</th>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                    <td>Column content</td>
-                  </tr>
-                </tbody>
-              </Table>
-            </CardBody>
-          </Card>
-        </Col>
-      </Row>
-    </Page>
+const renderRow = (row, index) => {
+  console.log(row);
+  return (
+    <tr key={index}>
+      <td>{row.filename}</td>
+      <td>{row.format}</td>
+      <td>{row.size}</td>
+      <td>{row.rows}</td>
+      <td>{row.time}</td>
+    </tr>
   );
 };
+
+class SentDataHistoryPage extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      fetching_error: undefined,
+    };
+  };
+
+  componentDidMount() {
+    const filesContext = this.context;
+    this.fetchSentFiles(filesContext);
+  };
+
+  fetchSentFiles = (filesContext) => {
+    console.log('Fetching');
+    (async () => {
+      try {
+        const result = await axios.get('http://localhost:5000/get_sent_files');
+        filesContext.addFile(Object.values(result.data.data.messages));
+      } catch (err) {
+        console.error(err);
+        this.setState({
+          fetching_error: err,
+        });
+      }
+    })();
+  };
+
+  render() {
+    let filesContext = this.context;
+    return (
+      <Page
+        title="Sent Data History"
+        breadcrumbs={[{ name: 'sent data history', active: true }]}
+        className="SentDataPage"
+      >
+        <Row>
+          <Col>
+            <Card className="mb-3">
+              <CardHeader>Sent data</CardHeader>
+              <CardBody>
+                <Table>
+                  <thead>
+                  <tr>
+                    <th scope="col">filename</th>
+                    <th scope="col">format</th>
+                    <th scope="col">size</th>
+                    <th scope="col">rows</th>
+                    <th scope="col">time</th>
+                  </tr>
+                  </thead>
+                  <FilesContext.Consumer>
+                    {(filesContext) => {
+                      return (
+                        <tbody>
+                        {
+                          filesContext.files.map((row, index) => {
+                            return renderRow(row[0], index);
+                          })
+                        }
+                        </tbody>
+                      );
+                    }}
+                  </FilesContext.Consumer>
+                </Table>
+              </CardBody>
+            </Card>
+          </Col>
+        </Row>
+        {this.state.fetching_error &&
+        <Row className="alert-container">
+          <UncontrolledAlert color="danger">
+            Couldn't fetch file history!
+          </UncontrolledAlert>
+        </Row>
+        }
+      </Page>
+
+    );
+  }
+
+}
+
+SentDataHistoryPage.contextType = FilesContext;
 
 export default SentDataHistoryPage;

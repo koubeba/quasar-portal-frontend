@@ -2,8 +2,10 @@ import GAListener from 'components/GAListener';
 import { MainLayout } from 'components/Layout';
 import PageSpinner from 'components/PageSpinner';
 import React from 'react';
+
 import componentQueries from 'react-component-queries';
 import { BrowserRouter, Redirect, Route, Switch } from 'react-router-dom';
+import { addFile, FilesContext } from './utils/FilesArray';
 import './styles/reduction.scss';
 
 const SendPage = React.lazy(() => import('pages/SendPage'));
@@ -16,22 +18,38 @@ const getBasename = () => {
 };
 
 class App extends React.Component {
+  constructor(props) {
+    super(props);
+    this.addFile = (file) => {
+      this.setState(state => ({
+        files: addFile(state.files, file)
+      }));
+    }
+
+    this.state = {
+      files: [],
+      addFile: this.addFile
+    }
+  }
+
   render() {
     return (
       <BrowserRouter basename={getBasename()}>
-        <GAListener>
-          <Switch>
-            <MainLayout breakpoint={this.props.breakpoint}>
-              <React.Suspense fallback={<PageSpinner />}>
-                <Route exact path="/" component={SendPage} />
-                <Route exact path="/results" component={ResultsPage} />
-                <Route exact path="/sent-data" component={SentDataHistoryPage} />
-                <Route exact path="/send" component={SendPage} />
-              </React.Suspense>
-            </MainLayout>
-            <Redirect to="/" />
-          </Switch>
-        </GAListener>
+        <FilesContext.Provider value={this.state}>
+          <GAListener>
+            <Switch>
+              <MainLayout breakpoint={this.props.breakpoint} cookies={this.props.cookies}>
+                <React.Suspense fallback={<PageSpinner/>}>
+                  <Route exact path="/" component={SendPage}/>
+                  <Route exact path="/results" component={ResultsPage}/>
+                  <Route exact path="/sent-data" component={SentDataHistoryPage}/>
+                  <Route exact path="/send" component={SendPage}/>
+                </React.Suspense>
+              </MainLayout>
+              <Redirect to="/"/>
+            </Switch>
+          </GAListener>
+        </FilesContext.Provider>
       </BrowserRouter>
     );
   }

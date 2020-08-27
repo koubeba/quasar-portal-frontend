@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { parse } from 'papaparse';
 import { Button, Col, Progress, Row } from 'reactstrap';
+import { v4 as uuidv4 } from 'uuid';
 
 const axios = require('axios');
 
@@ -67,6 +68,14 @@ class FileUpload extends Component {
             .then(r => console.log(r));
         },
       });
+      axios.post('http://localhost:5000/send_file_data', {
+        id: uuidv4(),
+        filename: this.state.file.name,
+        format: 'CSV',
+        size: allRowsSize,
+        rows: this.state.rowsProcessed,
+        time: Date.now()
+      }).then(r => console.log(r));
     }
   };
 
