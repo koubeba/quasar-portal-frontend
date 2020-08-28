@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
 import { parse } from 'papaparse';
-import { Button, Card, CardText, CardHeader, CardBody, Col, Input, Progress, Row } from 'reactstrap';
+import { Badge, Button, Card, CardText, CardHeader, CardBody, Col, Input, Progress, Row } from 'reactstrap';
 import { v4 as uuidv4 } from 'uuid';
+import { parseSchema, encode } from '../utils/avroEncoder';
 
 const axios = require('axios');
 require('../styles/file-upload.css');
@@ -9,12 +10,12 @@ require('../styles/file-upload.css');
 // TODO: move these to configuration file
 const backendUrl = 'http://localhost:5000';
 const sendMsgUrl = `${backendUrl}/send_message`;
-const schemaUrl = `${backendUrl}/get_schema`
+const schemaUrl = `${backendUrl}/get_schema`;
 
 const testTopic = 'test';
 const sendMessageUrl = (topic) => `${backendUrl}/send_message?topic=${topic}`;
 const sendFileDataUrl = `${backendUrl}/send_message?topic=${testTopic}`;
-const getSchemaUrl = (topic) => `${schemaUrl}?topic=${topic}`
+const getSchemaUrl = (topic) => `${schemaUrl}?topic=${topic}`;
 
 const listInTopicsUrl = `${backendUrl}/list_in_topics`;
 
@@ -26,6 +27,23 @@ const rowDataSize = (data) => {
   return Buffer.byteLength(Object.values(data).toString());
 };
 
+const prettyPrintSchema = (schema) => {
+  return (
+    <CardText>
+      {
+        schema.fields.map(r => {
+          return (
+            <>
+              <h5>{r.name} <Badge>{r.type}</Badge></h5>
+              {'\n'}
+            </>
+          );
+        })
+      }
+    </CardText>
+  );
+};
+
 class FileUpload extends Component {
   constructor(props) {
     super(props);
@@ -35,7 +53,8 @@ class FileUpload extends Component {
       percentCompleted: 0,
       inTopics: [],
       selectedTopic: undefined,
-      topicSchema: undefined
+      topicSchema: undefined,
+      parsedTopicSchema: undefined,
     };
   }
 
@@ -68,6 +87,7 @@ class FileUpload extends Component {
 
   processFile = () => {
     const topicName = this.state.selectedTopic;
+    const avroSchema = this.state.parsedTopicSchema;
     if (this.state.file !== undefined) {
       let counter = 0;
       let allRowsSize = this.state.file.size;
@@ -87,8 +107,9 @@ class FileUpload extends Component {
           updatePercent(counter, averageRowByteSize, allRowsSize);
           console.log('Processed a row!');
 
-          axios.post(sendMessageUrl(topicName), row.data)
-            .then(r => console.log(r));
+          axios.post(sendMessageUrl(topicName), {
+            data: encode(avroSchema, row.data),
+          });
         },
       });
       axios.post(sendFileDataUrl, {
@@ -104,15 +125,16 @@ class FileUpload extends Component {
 
   updateSchemaState = (schema) => {
     this.setState({
-      topicSchema: schema
+      topicSchema: schema,
+      parsedTopicSchema: parseSchema(schema),
     });
   };
 
   selectTopic = (topic) => {
     this.setState({
-      selectedTopic: topic
+      selectedTopic: topic,
     });
-    const updateSchemaState = this.updateSchemaState
+    const updateSchemaState = this.updateSchemaState;
     if (topic) {
       (async () => {
         const result = await axios.get(getSchemaUrl(topic));
@@ -120,10 +142,11 @@ class FileUpload extends Component {
       })();
     } else {
       this.setState({
-        topicSchema: undefined
-      })
+        topicSchema: undefined,
+        parsedTopicSchema: undefined,
+      });
     }
-  }
+  };
 
   updateTopics = (topics) => {
     this.setState({
@@ -181,12 +204,17 @@ class FileUpload extends Component {
           </Col>
         </Row>
         <Row>
-          {this.state.topicSchema &&
-          <Card>
-            <CardHeader>Schema for {this.state.selectedTopic.substring(3)}</CardHeader>
-            <CardBody>{JSON.stringify(this.state.topicSchema)}</CardBody>
-          </Card>
-          }
+          <Col md={3} sm={6} xs={12} className="mb-3"/>
+          <Col md={9} sm={6} xs={12} className="mb-3 vertical-flex">
+            <div className="progress-container">
+              {this.state.topicSchema &&
+              <Card>
+                <CardHeader>Schema for {this.state.selectedTopic.substring(3)}</CardHeader>
+                <CardBody>{prettyPrintSchema(JSON.parse(this.state.topicSchema))}</CardBody>
+              </Card>
+              }
+            </div>
+          </Col>
         </Row>
       </div>
     );
