@@ -4,6 +4,7 @@ import { Button, Col, Input, Progress, Row } from 'reactstrap';
 import { v4 as uuidv4 } from 'uuid';
 
 const axios = require('axios');
+require('../styles/file-upload.css');
 
  // TODO: move these to configuration file
 const backendUrl = 'http://localhost:5000';
@@ -135,14 +136,14 @@ class FileUpload extends Component {
               className="mb-3"
             />
             <h3>{this.state.rowsProcessed} rows processed</h3>
-            <Row>
+            <Row className="mb-3 topic-selection-row">
               <Button color="info" size="lg"
                       onClick={this.processFile}
                       disabled={(this.state.file === undefined) ||
                       (this.state.selectedTopic === undefined)}>
                 Send
               </Button>
-              <Input type="select" id="topic"
+              <Input type="select" id="topic" className="topic-selection"
                      onChange={e => this.setState(
                        { selectedTopic: e.target.value || undefined }
                        )}>

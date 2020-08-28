@@ -1,0 +1,9 @@
+.topic-selection-row {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.topic-selection {
+    width: 30%;
+}
