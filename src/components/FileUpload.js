@@ -1,9 +1,21 @@
 import React, { Component } from 'react';
 import { parse } from 'papaparse';
-import { Badge, Button, Card, CardText, CardHeader, CardBody, Col, Input, Progress, Row } from 'reactstrap';
+import {
+  Badge,
+  Button,
+  Card,
+  CardText,
+  CardHeader,
+  CardBody,
+  Col,
+  Input,
+  Progress,
+  Row,
+  UncontrolledAlert,
+} from 'reactstrap';
 import { v4 as uuidv4 } from 'uuid';
-import { parseSchema, encode } from '../utils/avroEncoder';
 
+const avro = require('avsc');
 const axios = require('axios');
 require('../styles/file-upload.css');
 
@@ -28,6 +40,7 @@ const rowDataSize = (data) => {
 };
 
 const prettyPrintSchema = (schema) => {
+  console.log(schema)
   return (
     <CardText>
       {
@@ -53,8 +66,7 @@ class FileUpload extends Component {
       percentCompleted: 0,
       inTopics: [],
       selectedTopic: undefined,
-      topicSchema: undefined,
-      parsedTopicSchema: undefined,
+      topicSchema: undefined
     };
   }
 
@@ -78,6 +90,12 @@ class FileUpload extends Component {
     });
   };
 
+  setProgressToDone = () => {
+    this.setState({
+      percentCompleted: 100
+    })
+  };
+
   changePercentCompleted = (counter, avgRowByteSize, allRowsSize) => {
     this.setState({
       rowsProcessed: counter,
@@ -87,7 +105,7 @@ class FileUpload extends Component {
 
   processFile = () => {
     const topicName = this.state.selectedTopic;
-    const avroSchema = this.state.parsedTopicSchema;
+    const avroSchema = avro.Type.forSchema(this.state.topicSchema);
     if (this.state.file !== undefined) {
       let counter = 0;
       let allRowsSize = this.state.file.size;
@@ -98,35 +116,29 @@ class FileUpload extends Component {
         worker: true,
         header: true,
         step: function(row) {
+          console.log(row.data)
           if (counter === 0) {
-            allRowsSize -= headerSize(row);
+            allRowsSize -= headerSize(row.data);
           }
           counter += 1;
-          processedRowsByteSize += rowDataSize(row);
+          processedRowsByteSize += rowDataSize(row.data);
           averageRowByteSize = processedRowsByteSize / counter;
           updatePercent(counter, averageRowByteSize, allRowsSize);
           console.log('Processed a row!');
 
-          axios.post(sendMessageUrl(topicName), {
-            data: encode(avroSchema, row.data),
+          axios.post(sendMessageUrl(topicName),
+            avroSchema.toBuffer(row.data),
+          ).catch((error) => {
+            console.log(error);
           });
-        },
+        }, complete: this.setProgressToDone
       });
-      axios.post(sendFileDataUrl, {
-        id: uuidv4(),
-        filename: this.state.file.name,
-        format: 'CSV',
-        size: allRowsSize,
-        rows: this.state.rowsProcessed,
-        time: Date.now(),
-      }).then(r => console.log(r));
     }
   };
 
   updateSchemaState = (schema) => {
     this.setState({
-      topicSchema: schema,
-      parsedTopicSchema: parseSchema(schema),
+      topicSchema: schema
     });
   };
 
@@ -138,12 +150,11 @@ class FileUpload extends Component {
     if (topic) {
       (async () => {
         const result = await axios.get(getSchemaUrl(topic));
-        updateSchemaState(result.data.data.schema);
+        updateSchemaState(JSON.parse(result.data.data.schema));
       })();
     } else {
       this.setState({
-        topicSchema: undefined,
-        parsedTopicSchema: undefined,
+        topicSchema: undefined
       });
     }
   };
@@ -210,7 +221,7 @@ class FileUpload extends Component {
               {this.state.topicSchema &&
               <Card>
                 <CardHeader>Schema for {this.state.selectedTopic.substring(3)}</CardHeader>
-                <CardBody>{prettyPrintSchema(JSON.parse(this.state.topicSchema))}</CardBody>
+                <CardBody>{prettyPrintSchema(this.state.topicSchema)}</CardBody>
               </Card>
               }
             </div>

@@ -63,8 +63,6 @@ class SentDataHistoryPage extends Component {
         handleError(undefined);
 
         let newOffset = result.data.data.offset;
-        console.log(filesContext.lastOffset)
-        console.log(newOffset)
         if (newOffset > filesContext.lastOffset) fetchNew(newOffset, filesContext);
       } catch (err) {
         handleError(err);
