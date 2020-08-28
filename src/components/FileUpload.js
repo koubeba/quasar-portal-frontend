@@ -1,9 +1,19 @@
 import React, { Component } from 'react';
 import { parse } from 'papaparse';
-import { Button, Col, Progress, Row } from 'reactstrap';
+import { Button, Col, Input, Progress, Row } from 'reactstrap';
 import { v4 as uuidv4 } from 'uuid';
 
 const axios = require('axios');
+
+ // TODO: move these to configuration file
+const backendUrl = 'http://localhost:5000';
+const sendMsgUrl = `${backendUrl}/send_message`;
+
+const testTopic = 'test';
+const sendMessageUrl = (topic) => `${backendUrl}/send_message?topic=${topic}`;
+const sendFileDataUrl = `${backendUrl}/send_message?topic=${testTopic}`;
+
+const listInTopicsUrl = `${backendUrl}/list_in_topics`;
 
 const headerSize = (data) => {
   return Buffer.byteLength(Object.keys(data).toString());
@@ -20,7 +30,13 @@ class FileUpload extends Component {
       file: undefined,
       rowsProcessed: 0,
       percentCompleted: 0,
+      inTopics: [],
+      selectedTopic: undefined
     };
+  }
+
+  componentDidMount() {
+    this.listTopics();
   }
 
   onFileChange = (e) => {
@@ -47,6 +63,7 @@ class FileUpload extends Component {
   };
 
   processFile = () => {
+    const topicName = this.state.selectedTopic
     if (this.state.file !== undefined) {
       let counter = 0;
       let allRowsSize = this.state.file.size;
@@ -57,18 +74,21 @@ class FileUpload extends Component {
         worker: true,
         header: true,
         step: function(row) {
-          if (counter === 0) allRowsSize -= headerSize(row);
+          if (counter === 0) {
+            allRowsSize -= headerSize(row);
+            console.log('')
+          }
           counter += 1;
           processedRowsByteSize += rowDataSize(row);
           averageRowByteSize = processedRowsByteSize / counter;
           updatePercent(counter, averageRowByteSize, allRowsSize);
           console.log('Processed a row!');
 
-          axios.post('http://localhost:5000/send_message', row.data)
+          axios.post(sendMessageUrl(topicName), row.data)
             .then(r => console.log(r));
         },
       });
-      axios.post('http://localhost:5000/send_file_data', {
+      axios.post(sendFileDataUrl, {
         id: uuidv4(),
         filename: this.state.file.name,
         format: 'CSV',
@@ -79,9 +99,18 @@ class FileUpload extends Component {
     }
   };
 
-  fileInputLabel = () => {
-    if (this.state.file === undefined) return 'Upload Your File'
-    else return this.state.file.name
+  updateTopics = (topics) => {
+    this.setState({
+      inTopics: topics
+    })
+  }
+
+  listTopics = () => {
+    const update = this.updateTopics;
+    (async () => {
+      const result = await axios.get(listInTopicsUrl);
+      update(Object.values(result.data.data.topics))
+    })();
   }
 
   render() {
@@ -105,12 +134,24 @@ class FileUpload extends Component {
               value={this.state.percentCompleted}
               className="mb-3"
             />
-            <h3> {this.state.rowsProcessed} rows processed</h3>
-            <Button color="info" size="lg"
-                    onClick={this.processFile}
-                    disabled={(this.state.file === undefined)}>
-              Send
-            </Button>
+            <h3>{this.state.rowsProcessed} rows processed</h3>
+            <Row>
+              <Button color="info" size="lg"
+                      onClick={this.processFile}
+                      disabled={(this.state.file === undefined) ||
+                      (this.state.selectedTopic === undefined)}>
+                Send
+              </Button>
+              <Input type="select" id="topic"
+                     onChange={e => this.setState(
+                       { selectedTopic: e.target.value || undefined }
+                       )}>
+                <option value=''>Select the topic...</option>
+                {this.state.inTopics.map(t => (
+                  <option value={t}>{t.substring(3)}</option>
+                ))}
+              </Input>
+            </Row>
           </div>
         </Col>
       </Row>
