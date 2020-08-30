@@ -18,6 +18,7 @@ import {
   TabContent,
   UncontrolledAlert,
 } from 'reactstrap';
+import { BiAccessibility } from 'react-icons/all';
 
 const avro = require('avsc');
 const axios = require('axios');
@@ -30,15 +31,11 @@ require('../styles/file-upload.css');
 
 // TODO: move these to configuration file
 const backendUrl = 'http://localhost:5000';
-const sendMsgUrl = `${backendUrl}/send_message`;
 const schemaUrl = `${backendUrl}/get_schema`;
 
-const testTopic = 'test';
-const sendMessageUrl = (topic) => `${backendUrl}/send_message?topic=${topic}`;
-const sendFileDataUrl = `${backendUrl}/send_message?topic=${testTopic}`;
+const sendMessageUrl = (topic, format) => `${backendUrl}/send_message?topic=${topic}-${format.toLowerCase()}`;
 const getSchemaUrl = (topic) => `${schemaUrl}?topic=${topic}`;
-
-const listInTopicsUrl = `${backendUrl}/list_in_topics`;
+const listInTopicsUrl = (format) => `${backendUrl}/list_in_topics?format=${format}`;
 
 const headerSize = (data) => {
   return Buffer.byteLength(Object.keys(data).toString());
@@ -48,15 +45,22 @@ const rowDataSize = (data) => {
   return Buffer.byteLength(Object.values(data).toString());
 };
 
+const prettyPrintType = (type) => {
+  if (type.constructor === Object) {
+    return <Badge>{type.type}({type.items})</Badge>
+  } else {
+    return <Badge>{type}</Badge>
+  }
+}
+
 const prettyPrintSchema = (schema) => {
-  console.log(schema);
   return (
     <CardText>
       {
         schema.fields.map(r => {
           return (
             <>
-              <h5>{r.name} <Badge>{r.type}</Badge></h5>
+              <h5>{r.name} {prettyPrintType(r.type)}</h5>
               {'\n'}
             </>
           );
@@ -81,7 +85,7 @@ class FileUpload extends Component {
   }
 
   componentDidMount() {
-    this.listTopics();
+    this.listTopics(this.state.activeTab);
   }
 
   onFileChange = (e) => {
@@ -158,13 +162,14 @@ class FileUpload extends Component {
   };
 
   selectTopic = (topic) => {
+    const format = this.state.activeTab;
     this.setState({
       selectedTopic: topic,
     });
     const updateSchemaState = this.updateSchemaState;
     if (topic) {
       (async () => {
-        const result = await axios.get(getSchemaUrl(topic));
+        const result = await axios.get(getSchemaUrl(topic, format));
         updateSchemaState(JSON.parse(result.data.data.schema));
       })();
     } else {
@@ -177,22 +182,29 @@ class FileUpload extends Component {
   updateTopics = (topics) => {
     this.setState({
       inTopics: topics,
+      file: undefined,
+      selectedTopic: undefined,
+      topicSchema: undefined
     });
   };
 
-  listTopics = () => {
+  listTopics = (format) => {
     const update = this.updateTopics;
     (async () => {
-      const result = await axios.get(listInTopicsUrl);
+      const result = await axios.get(listInTopicsUrl(format));
       update(Object.values(result.data.data.topics));
     })();
   };
 
   renderFormatNavLink = (format) => {
     const setState = this.updateActiveTab;
+    const listTopics = this.listTopics;
     return (
       <NavItem>
-        <NavLink onClick={() => setState(format)}>
+        <NavLink onClick={() => {
+          setState(format);
+          listTopics(format);
+        }}>
           {format}
         </NavLink>
       </NavItem>
