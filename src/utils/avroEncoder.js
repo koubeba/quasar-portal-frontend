@@ -1,15 +1,9 @@
-const avro = require('avro-js');
+const avro = require('avsc');
 
-const parseSchema = (jsonSchema) => {
-  return avro.parse(jsonSchema);
-}
-
-const encode = (avroSchema, objectJson) => {
-  return avroSchema.toBuffer(objectJson);
-}
+const avroSchema = (jsonSchema) => avro.Type.forSchema(JSON.parse(jsonSchema));
 
 const decode = (avroSchema, encodedObject) => {
   return avroSchema.fromBuffer(encodedObject);
 }
 
-export {parseSchema, encode, decode};
+export {avroSchema, decode};

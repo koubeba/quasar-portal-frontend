@@ -2,6 +2,9 @@ import Page from 'components/Page';
 import React, { Component } from 'react';
 import { Card, CardBody, CardHeader, Col, Row, Table, UncontrolledAlert } from 'reactstrap';
 import { FilesContext } from '../utils/FilesArray';
+import { toast } from 'react-toastify';
+import { getInTopicsOffsets } from '../utils/quasarServer';
+import { SentDataContext } from '../utils/SentDataArray';
 
 require('../styles/sent-data-history-page.css');
 
@@ -16,11 +19,9 @@ const timestampToStr = (timestamp) => {
 const renderRow = (row, index) => {
   return (
     <tr key={index}>
-      <td>{row.filename}</td>
-      <td>{row.format}</td>
-      <td>{row.size}</td>
-      <td>{row.rows}</td>
-      <td>{row.time}</td>
+      <td>{row.topic_name}</td>
+      <td>{row.csv}</td>
+      <td>{row.json}</td>
     </tr>
   );
 };
@@ -29,18 +30,18 @@ class SentDataHistoryPage extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      fetching_error: undefined,
+      topicOffsets: [],
     };
   };
 
   componentDidMount() {
-    const filesContext = this.context;
-    this.fetchSentFiles(filesContext);
+    const sentDataContext = this.context;
+    this.fetchTopicOffsets(sentDataContext);
 
     this.tickID = setInterval(
-      (() => this.tick()),
-      5000
-    )
+      (() => this.fetchTopicOffsets(sentDataContext)),
+      5000,
+    );
   };
 
   componentWillUnmount() {
@@ -48,41 +49,25 @@ class SentDataHistoryPage extends Component {
   }
 
   handleFetchingError = (err) => {
-    this.setState({
-      fetching_error: err,
+    toast.error(`Couldn't fetch topics! ${err}`, {
+      autoClose: 4000,
     });
-  }
+  };
 
-  tick() {
+  fetchTopicOffsets = (sentDataContext) => {
     const handleError = this.handleFetchingError;
-    const fetchNew = this.fetchSentFiles;
-    const filesContext = this.context;
-    (async() => {
-      try {
-        const result = await axios.get('http://localhost:5000/get_sent_files_offset');
-        handleError(undefined);
-
-        let newOffset = result.data.data.offset;
-        if (newOffset > filesContext.lastOffset) fetchNew(newOffset, filesContext);
-      } catch (err) {
-        handleError(err);
-      }
-    })();
-  }
-
-  fetchSentFiles = (newOffset, filesContext) => {
-    const handleError = this.handleFetchingError;
+    const updateTopicOffsets = (topicOffsets) => {
+      sentDataContext.updateTopicOffsets(topicOffsets);
+    };
     (async () => {
       try {
-        const result = await axios.get('http://localhost:5000/get_sent_files');
-        filesContext.updateOffset(newOffset);
-        filesContext.addFile(Object.values(result.data.data.messages));
+        const result = await getInTopicsOffsets();
+        updateTopicOffsets(result);
       } catch (err) {
         handleError(err);
       }
     })();
   };
-
 
 
   render() {
@@ -101,38 +86,23 @@ class SentDataHistoryPage extends Component {
                 <Table>
                   <thead>
                   <tr>
-                    <th scope="col">filename</th>
-                    <th scope="col">format</th>
-                    <th scope="col">size</th>
-                    <th scope="col">rows</th>
-                    <th scope="col">time</th>
+                    <th scope="col">topic name</th>
+                    <th scope="col">CSV</th>
+                    <th scope="col">JSON</th>
                   </tr>
                   </thead>
-                  <FilesContext.Consumer>
-                    {(filesContext) => {
-                      return (
-                        <tbody>
-                        {
-                          filesContext.files.map((row, index) => {
-                            return renderRow(JSON.parse(row[0]), index);
-                          })
-                        }
-                        </tbody>
-                      );
+                  <SentDataContext.Consumer>
+                    {(sentDataContext) => {
+                      return sentDataContext.topicOffsets.map((row, index) => {
+                        return renderRow(row, index);
+                      });
                     }}
-                  </FilesContext.Consumer>
+                  </SentDataContext.Consumer>
                 </Table>
               </CardBody>
             </Card>
           </Col>
         </Row>
-        {this.state.fetching_error &&
-        <Row className="alert-container">
-          <UncontrolledAlert color="danger">
-            Couldn't fetch file history!
-          </UncontrolledAlert>
-        </Row>
-        }
       </Page>
 
     );
@@ -140,6 +110,6 @@ class SentDataHistoryPage extends Component {
 
 }
 
-SentDataHistoryPage.contextType = FilesContext;
+SentDataHistoryPage.contextType = SentDataContext;
 
 export default SentDataHistoryPage;

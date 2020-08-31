@@ -5,7 +5,7 @@ import React from 'react';
 
 import componentQueries from 'react-component-queries';
 import { BrowserRouter, Redirect, Route, Switch } from 'react-router-dom';
-import { addFile, FilesContext } from './utils/FilesArray';
+import { SentDataContext } from './utils/SentDataArray';
 import './styles/reduction.scss';
 
 const SendPage = React.lazy(() => import('pages/SendPage'));
@@ -20,30 +20,21 @@ const getBasename = () => {
 class App extends React.Component {
   constructor(props) {
     super(props);
-    this.addFile = (file) => {
-      this.setState(state => ({
-        files: addFile(state.files, file)
-      }));
-    };
-
-    this.updateOffset = (newOffset) => {
+    this.updateTopicOffsets = (newTopicOffsets) => {
       this.setState({
-        lastOffset: newOffset
-      })
+        topicOffsets: newTopicOffsets,
+      });
     };
-
     this.state = {
-      files: [],
-      lastOffset: 0,
-      addFile: this.addFile,
-      updateOffset: this.updateOffset
-    }
+      topicOffsets: [],
+      updateTopicOffsets: this.updateTopicOffsets,
+    };
   }
 
   render() {
     return (
       <BrowserRouter basename={getBasename()}>
-        <FilesContext.Provider value={this.state}>
+        <SentDataContext.Provider value={this.state}>
           <GAListener>
             <Switch>
               <MainLayout breakpoint={this.props.breakpoint} cookies={this.props.cookies}>
@@ -57,7 +48,7 @@ class App extends React.Component {
               <Redirect to="/"/>
             </Switch>
           </GAListener>
-        </FilesContext.Provider>
+        </SentDataContext.Provider>
       </BrowserRouter>
     );
   }

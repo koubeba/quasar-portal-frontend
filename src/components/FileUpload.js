@@ -15,10 +15,10 @@ import {
   Progress,
   Row,
   TabPane,
-  TabContent,
-  UncontrolledAlert,
+  TabContent
 } from 'reactstrap';
-import { BiAccessibility } from 'react-icons/all';
+import {getConnectionInfo} from '../utils/quasarServer';
+import {toast} from 'react-toastify';
 
 const avro = require('avsc');
 const axios = require('axios');
@@ -26,14 +26,13 @@ const axios = require('axios');
 const csvFormat = 'CSV';
 const jsonFormat = 'JSON';
 
-
 require('../styles/file-upload.css');
 
 // TODO: move these to configuration file
 const backendUrl = 'http://localhost:5000';
 const schemaUrl = `${backendUrl}/get_schema`;
 
-const sendMessageUrl = (topic, format) => `${backendUrl}/send_message?topic=${topic}-${format.toLowerCase()}`;
+const sendMessageUrl = (topic, format) => `${backendUrl}/send_message?topic=${topic}`;
 const getSchemaUrl = (topic) => `${schemaUrl}?topic=${topic}`;
 const listInTopicsUrl = (format) => `${backendUrl}/list_in_topics?format=${format}`;
 
@@ -70,6 +69,13 @@ const prettyPrintSchema = (schema) => {
   );
 };
 
+const prettyPrintTopicName = (topic_name) => {
+  return topic_name
+    .substr(3)
+    .replace(`-${csvFormat.toLowerCase()}`, '')
+    .replace(`-${jsonFormat.toLowerCase()}`, '')
+}
+
 class FileUpload extends Component {
   constructor(props) {
     super(props);
@@ -86,6 +92,14 @@ class FileUpload extends Component {
 
   componentDidMount() {
     this.listTopics(this.state.activeTab);
+    (async () => {
+      try {
+        const connection_info = await getConnectionInfo();
+        toast(`Connected to ${connection_info} Kafka brokers`);
+      } catch (err) {
+        toast.error("Couldn't connect to Kafka!");
+      }
+    })();
   }
 
   onFileChange = (e) => {
@@ -117,9 +131,10 @@ class FileUpload extends Component {
     });
   };
 
-  processCSVFile = () => {
+  processCSVFile = async () => {
     const topicName = this.state.selectedTopic;
     const avroSchema = avro.Type.forSchema(this.state.topicSchema);
+    const format = this.state.activeTab;
     if (this.state.file !== undefined) {
       let counter = 0;
       let allRowsSize = this.state.file.size;
@@ -129,22 +144,25 @@ class FileUpload extends Component {
       parse(this.state.file, {
         worker: true,
         header: true,
-        step: function(row) {
+        step: async function(row) {
           if (counter === 0) {
             allRowsSize -= headerSize(row.data);
           }
-          counter += 1;
-          processedRowsByteSize += rowDataSize(row.data);
-          averageRowByteSize = processedRowsByteSize / counter;
-          updatePercent(counter, averageRowByteSize, allRowsSize);
-          console.log('Processed a row!');
-
-          axios.post(sendMessageUrl(topicName),
-            avroSchema.toBuffer(row.data),
-          ).catch((error) => {
-            console.log(error);
-          });
-        }, complete: this.setProgressToDone,
+          try {
+            await axios.post(sendMessageUrl(topicName, format),
+              avroSchema.toBuffer(row.data),
+            );
+            counter += 1;
+            processedRowsByteSize += rowDataSize(row.data);
+            averageRowByteSize = processedRowsByteSize / counter;
+            updatePercent(counter, averageRowByteSize, allRowsSize);
+            console.log('Processed a row!');
+          } catch (e) {
+            toast.error(`Error while sending a row no. ${counter}: ${e}`)
+          }
+        },
+        error: function(err, file, inputElem, reason) {},
+        complete: this.setProgressToDone,
       });
     }
   };
@@ -256,7 +274,7 @@ class FileUpload extends Component {
                          onChange={e => this.selectTopic(e.target.value || undefined)}>
                     <option value=''>Select the topic...</option>
                     {this.state.inTopics.map(t => (
-                      <option value={t}>{t.substring(3)}</option>
+                      <option value={t}>{prettyPrintTopicName(t)}</option>
                     ))}
                   </Input>
                 </Row>
@@ -269,7 +287,9 @@ class FileUpload extends Component {
               <div className="progress-container">
                 {this.state.topicSchema &&
                 <Card>
-                  <CardHeader>Schema for {this.state.selectedTopic.substring(3)}</CardHeader>
+                  <CardHeader>
+                    Schema for {prettyPrintTopicName(this.state.selectedTopic)}
+                  </CardHeader>
                   <CardBody>{prettyPrintSchema(this.state.topicSchema)}</CardBody>
                 </Card>
                 }

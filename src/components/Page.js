@@ -6,6 +6,8 @@ import bn from 'utils/bemnames';
 import { Breadcrumb, BreadcrumbItem } from 'reactstrap';
 
 import Typography from './Typography';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const bem = bn.create('page');
 
@@ -40,6 +42,10 @@ const Page = ({
               ))}
           </Breadcrumb>
         )}
+        <ToastContainer
+          position="bottom-right"
+          newestOnTop
+        />
       </div>
       {children}
     </Tag>
