@@ -19,6 +19,7 @@ import {
 } from 'reactstrap';
 import {getConnectionInfo} from '../utils/quasarServer';
 import {toast} from 'react-toastify';
+import { sendMessageUrl, getSchemaUrl, listInTopicsUrl, getSchema } from '../utils/quasarServer';
 
 const avro = require('avsc');
 const axios = require('axios');
@@ -28,13 +29,6 @@ const jsonFormat = 'JSON';
 
 require('../styles/file-upload.css');
 
-// TODO: move these to configuration file
-const backendUrl = 'http://localhost:5000';
-const schemaUrl = `${backendUrl}/get_schema`;
-
-const sendMessageUrl = (topic, format) => `${backendUrl}/send_message?topic=${topic}`;
-const getSchemaUrl = (topic) => `${schemaUrl}?topic=${topic}`;
-const listInTopicsUrl = (format) => `${backendUrl}/list_in_topics?format=${format}`;
 
 const headerSize = (data) => {
   return Buffer.byteLength(Object.keys(data).toString());
