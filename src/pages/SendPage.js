@@ -10,12 +10,6 @@ import {
 
 const SendPage = (props) => {
 
-  const [activeTab, setActiveTab] = useState('1');
-
-  const toggle = tab => {
-    if (activeTab !== tab) setActiveTab(tab);
-  };
-
   return (
     <Page title="Send data" breadcrumbs={[{ name: 'send data', active: true }]}>
       <Row>

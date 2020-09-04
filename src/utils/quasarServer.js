@@ -2,7 +2,8 @@ const axios = require('axios');
 
 // TODO: move to configuration file
 
-const backendUrl = 'https://sleepy-island-55053.herokuapp.com';
+// const backendUrl = 'https://sleepy-island-55053.herokuapp.com';
+const backendUrl = 'http://localhost:5000';
 const connectionInfoUrl = `${backendUrl}/connected`;
 const inTopicsOffsetsUrl = `${backendUrl}/get_in_topics_offsets`;
 const sendMsgUrl = `${backendUrl}/send_message`;
