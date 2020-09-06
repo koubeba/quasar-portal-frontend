@@ -18,7 +18,7 @@ const getSchemaUrl = (topic) => `${schemaUrl}?topic=${topic}`;
 
 const getSchema = async (topic) => {
   const result = await getFromServer(getSchemaUrl(topic));
-  return JSON.parse(result.data.data.schema);
+  return result.data.data.schema;
 };
 
 const getOutTopics = async () => {

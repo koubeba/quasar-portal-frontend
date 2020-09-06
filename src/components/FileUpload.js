@@ -163,15 +163,14 @@ class FileUpload extends Component {
   };
 
   selectTopic = (topic) => {
-    const format = this.state.activeTab;
     this.setState({
       selectedTopic: topic,
     });
     const updateSchemaState = this.updateSchemaState;
     if (topic) {
       (async () => {
-        const result = await axios.get(getSchemaUrl(topic, format));
-        updateSchemaState(JSON.parse(result.data.data.schema));
+        const result = await getSchema(topic);
+        updateSchemaState(JSON.parse(result));
       })();
     } else {
       this.setState({
@@ -223,7 +222,9 @@ class FileUpload extends Component {
               <Row className="mb-3 topic-selection-row">
                 <Button color="info" size="lg"
                         onClick={this.processCSVFile}
-                        disabled={(this.state.file === undefined) || (this.state.selectedTopic === undefined)}>
+                        disabled={(this.state.file === undefined) ||
+                                  (this.state.selectedTopic === undefined) ||
+                                  (this.state.topicSchema === undefined)}>
                   Send
                 </Button>
                 <Input type="select" id="topic" className="topic-selection"
