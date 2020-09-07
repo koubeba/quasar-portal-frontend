@@ -15,23 +15,6 @@ const processTimestamp = (timestamp) => {
   return new Date(timestamp);
 };
 
-const genPieData = () => {
-  return {
-    datasets: [
-      {
-        data: [randomNum(), randomNum(), randomNum()],
-        backgroundColor: [
-          getColor('primary'),
-          getColor('secondary'),
-          getColor('success'),
-        ],
-        label: 'Dataset 1',
-      },
-    ],
-    labels: ['QSO', 'Galaxy', 'Star'],
-  };
-};
-
 const handleFetchingError = (err) => {
   console.error(err);
 };
@@ -51,6 +34,7 @@ const genLineData = (rows_processed) => {
         borderWidth: 1,
         fill: false,
         data: rows_processed,
+        label: 'row'
       },
     ],
   };
@@ -140,7 +124,8 @@ class ResultsPage extends Component {
     };
     (async () => {
       try {
-        const schema = await getSchema(topic);
+        const result = await getSchema(topic);
+        const schema = JSON.parse(result);
         try {
           if (schema.type !== 'classification' && schema.type !== 'rows_processed') {
             toast.error(`Schema of unknown type ${schema.type}`);
