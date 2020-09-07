@@ -9,14 +9,12 @@ import {
   CardBody,
   Col,
   Input,
-  NavLink,
-  NavItem,
   Progress,
   Row,
 } from 'reactstrap';
 import { getConnectionInfo } from '../utils/quasarServer';
 import { toast } from 'react-toastify';
-import { sendMessageUrl, getSchemaUrl, listInTopicsUrl, getSchema } from '../utils/quasarServer';
+import { sendMessageUrl, listInTopicsUrl, getSchema } from '../utils/quasarServer';
 
 const avro = require('avsc');
 const axios = require('axios');

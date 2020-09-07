@@ -1,10 +1,10 @@
 import Page from 'components/Page';
 import FileUpload from '../components/FileUpload';
-import React, { useState } from 'react';
+import React, from 'react';
 import {
   Card,
   CardBody,
-  Col, Progress,
+  Col,
   Row,
 } from 'reactstrap';
 

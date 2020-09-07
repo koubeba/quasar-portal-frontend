@@ -1,11 +1,10 @@
 import React, { Component } from 'react';
 
 import { getColor } from 'utils/colors';
-import { randomNum } from 'utils/demos';
 
 import { Row, Col, Card, CardHeader, CardBody, Input } from 'reactstrap';
 
-import { Line, Pie, Doughnut, Bar, Radar, Polar } from 'react-chartjs-2';
+import { Line, Pie } from 'react-chartjs-2';
 
 import Page from 'components/Page';
 import { getOutTopics, getMessages, getSchema } from '../utils/quasarServer';
